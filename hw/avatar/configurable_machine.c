@@ -495,10 +495,7 @@ static THISCPU *create_cpu(MachineState * ms, QDict *conf)
     BusState* sysbus = sysbus_get_default();
     int num_irq = 64;
 
-#elif defined(TARGET_I386)
-    //
-
-#elif defined(TARGET_MIPS)
+#elif defined(TARGET_I386) || defined(TARGET_MIPS)
     Error *err = NULL;
 #endif  /* TARGET_ARM && ! TARGET_AARCH64 */
 
@@ -549,7 +546,23 @@ static THISCPU *create_cpu(MachineState * ms, QDict *conf)
 #endif  /* ! TARGET_AARCH64 */
 
 #elif defined(TARGET_I386)
-    cpu_oc = cpu_class_by_name(TYPE_X86_CPU, cpu_type);
+    printf("cpu_type: %s \n", cpu_type);
+
+    int len_cpu_type = strlen(cpu_type);
+    int len_x86_cpu_type = sizeof(TYPE_X86_CPU);
+
+    printf("Length cpu type %d, ", len_cpu_type);
+    printf("Length x86 cpu type %d \n", len_x86_cpu_type);
+
+    int tmp_length = len_cpu_type - len_x86_cpu_type;
+    char tmp[tmp_length];
+    strncpy(tmp, cpu_type, tmp_length);
+    tmp[tmp_length] = 0;
+    const char* cpu_type_name = tmp;
+
+    printf("cpu_type_name: %s \n", cpu_type_name);
+    
+    cpu_oc = cpu_class_by_name(TYPE_X86_CPU, cpu_type_name);
     if (!cpu_oc) {
         error_printf("Unable to find CPU definition\n");
         exit(1);
@@ -561,6 +574,19 @@ static THISCPU *create_cpu(MachineState * ms, QDict *conf)
     if (cpuu->apic_state) {
             device_legacy_reset(cpuu->apic_state);
     }
+
+    if (!object_property_set_uint(OBJECT(cpuu), "apic-id", 0, &err)) {
+        error_report_err(err);
+        object_unref(OBJECT(cpuu));
+        exit(EXIT_FAILURE);
+    }
+
+    if (!qdev_realize(DEVICE(cpuu), NULL, &err)) {
+        error_report_err(err);
+        object_unref(OBJECT(cpuu));
+        exit(EXIT_FAILURE);
+    }
+
 
 #elif defined(TARGET_MIPS)
     cpu_oc = cpu_class_by_name(TYPE_MIPS_CPU, cpu_type);

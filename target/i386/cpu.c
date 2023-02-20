@@ -5864,6 +5864,12 @@ static void x86_cpu_reset(DeviceState *dev)
                            DESC_P_MASK | DESC_S_MASK | DESC_W_MASK |
                            DESC_A_MASK);
 
+    if (x86_configurable_machine_mode == 16) {
+        // TODO set mode in configurable machine with command at runtime ?!
+        
+        return;
+    }
+
     if (x86_configurable_machine_mode == 32) {
       // For configurable machine, don't continue
       // setting up initial state. These registers
@@ -5871,11 +5877,12 @@ static void x86_cpu_reset(DeviceState *dev)
       // of a unicorn-style execution
 
       // But do set hflags so we're in 32-bit mode (else we end up in 16-bit)
-      env->hflags |= HF_CS32_MASK;
+      env->hflags |= HF_CS32_MASK | HF_SS32_MASK;
       return;
     }else if (x86_configurable_machine_mode == 64) {
       // Set hflags so we're in 64-bit mode (else we end up in 16-bit)
-      env->hflags |= HF_CS64_MASK;
+      // turned off for not having unicorn style execution for submission
+      //env->hflags |= HF_CS64_MASK;
       return;
     }
 
